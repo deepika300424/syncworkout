@@ -1,0 +1,49 @@
+# Environment and secrets
+.env
+.env.*
+
+# Local dataset and generated media (do NOT commit bulky media files)
+puma_workout_data/
+
+# Python bytecode
+*/pycache
+*/__pycache__
+__pycache__
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+
+# IDE/editor configs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Built or cached model/index artifacts (can be regenerated)
+storage/*.index
+storage/*_audio.index
+storage/*_video.index
+storage/chunks.json
+storage/chunks_audio.json
+storage/chunks_video.json
+storage/workouts.db
+storage/faiss.index
+storage/faiss_audio.index
+storage/faiss_video.index
+
+# Transcript and derived chunk files (generated)
+**/*.txt
+**/*_chunk*.txt
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Other
+*.log
+pip-wheel-metadata/
