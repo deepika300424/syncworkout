@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SyncWorkout</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">SYNCWORKOUT / TRAINING GUIDE</p>
+        <h1>Find your next movement.</h1>
+      </div>
+      <label class="switch">
+        <input id="speak-toggle" type="checkbox">
+        <span class="switch-track"></span>
+        <span>Read answers aloud</span>
+      </label>
+    </header>
+
+    <section class="search-panel" aria-label="Workout search">
+      <textarea id="query" rows="2" placeholder="Ask for a workout, exercise, or form cue..."></textarea>
+      <div class="composer-row">
+        <button id="mic-button" class="icon-button" type="button" title="Speak your question" aria-label="Speak your question">&#127908;</button>
+        <span id="mic-status" class="status">Type or use the microphone</span>
+        <button id="search-button" class="primary-button" type="button">Find movements <span aria-hidden="true">&#8594;</span></button>
+      </div>
+    </section>
+
+    <p id="loading" class="loading" hidden>Searching your workout library...</p>
+    <section id="answer-panel" class="answer-panel" hidden>
+      <p class="eyebrow">COACH'S NOTE</p>
+      <div id="answer" class="answer"></div>
+    </section>
+    <section id="results" class="results" aria-live="polite"></section>
+    <p id="error" class="error" hidden></p>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -36,4 +36,11 @@ def generate_grounded_response(
     response = llm.invoke([SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)])
     if isinstance(response.content, str):
         return response.content
+    if isinstance(response.content, list):
+        text_blocks = [
+            block.get("text", "")
+            for block in response.content
+            if isinstance(block, dict) and block.get("type") == "text"
+        ]
+        return "\n\n".join(text for text in text_blocks if text).strip()
     return str(response.content)

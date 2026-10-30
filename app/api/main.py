@@ -5,6 +5,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.llm_factory import build_llm
 from app.core.schemas import QueryRequest, QueryResponse
@@ -17,18 +19,46 @@ from app.voice.stt import SpeechToText
 
 settings = get_settings()
 app = FastAPI(title="Workout Voice RAG API", version="0.1.0")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+INDEX_CACHE_VERSION = "3"
 
 retriever: HybridRetriever | None = None
 workflow = None
 startup_error: str | None = None
-stt_engine = SpeechToText(model_name="base")
+stt_engine: SpeechToText | None = None
+
+
+@app.get("/", response_class=FileResponse)
+def ui() -> FileResponse:
+    return FileResponse("app/static/index.html")
+
+
+def get_stt_engine() -> SpeechToText:
+    global stt_engine
+    if stt_engine is None:
+        stt_engine = SpeechToText(model_name="base")
+    return stt_engine
+
+
+@app.get("/media/{media_path:path}")
+def media(media_path: str) -> FileResponse:
+    media_root = settings.puma_data_root.resolve()
+    requested_path = (media_root / media_path).resolve()
+    if media_root not in requested_path.parents or not requested_path.is_file():
+        raise HTTPException(status_code=404, detail="Media file not found.")
+    return FileResponse(requested_path)
 
 
 def _cached_index_matches(chunks_json_path: Path, db_chunks_count: int) -> bool:
-    if not chunks_json_path.exists():
+    version_path = chunks_json_path.with_name("index.version")
+    if not version_path.exists() or version_path.read_text(encoding="utf-8").strip() != INDEX_CACHE_VERSION:
         return False
-    payload = json.loads(chunks_json_path.read_text(encoding="utf-8"))
-    return len(payload) == db_chunks_count
+    total_cached_chunks = 0
+    for suffix in ("", "_audio", "_video"):
+        cache_path = chunks_json_path.with_name(f"{chunks_json_path.stem}{suffix}{chunks_json_path.suffix}")
+        if cache_path.exists():
+            total_cached_chunks += len(json.loads(cache_path.read_text(encoding="utf-8")))
+    return total_cached_chunks == db_chunks_count
 
 
 @app.on_event("startup")
@@ -62,6 +92,7 @@ def startup_event() -> None:
     else:
         retriever.build(chunks)
         retriever.save(settings.faiss_index_path, settings.chunks_json_path)
+        settings.chunks_json_path.with_name("index.version").write_text(INDEX_CACHE_VERSION, encoding="utf-8")
 
     try:
         llm = build_llm(settings)
@@ -115,7 +146,7 @@ def voice_query(audio: UploadFile = File(...)) -> QueryResponse:
         tmp.write(audio.file.read())
         tmp_path = tmp.name
 
-    transcript = stt_engine.transcribe_file(tmp_path)
+    transcript = get_stt_engine().transcribe_file(tmp_path)
     try:
         result = workflow.invoke({"query": transcript})
     except Exception as error:
